@@ -1,42 +1,13 @@
 <?php  
+
     session_start();
-    include ('./database/connection.php');
+    include('./database/connection.php');
     $connect = connection();
     $userid = $_SESSION['userid'];
     $user = $_SESSION['user'];
     $profile_pic = $_SESSION['avater'];
-    $message = '';
-
-    if(isset($_POST['submit'])){
-        $product_name = $_POST['product_name'];
-        $bought = $_POST['bought'];
-        $price = $_POST['price'];
-        $product_description = $_POST['product_description'];
-        $image = $_FILES['image'];
-        $image_name = $image['name'];
-        $tmp_name = $image['tmp_name'];
-        $size = $image['size'];
-        $format = explode('.', $image_name);
-        $actualName = strtolower($format[0]);
-        $actualFormat = strtolower($format[1]);
-        $allowFormat = ['jpg', 'jpeg', 'png', 'gif'];
-
-        if(in_array($actualFormat, $allowFormat)) {
-            $location = 'Products/'.$actualName.'.'.$actualFormat;
-
-            $sql = "INSERT INTO product_info (product_name, bought , image, price, product_description, created_at) VALUES('$product_name', '$bought', '$location', '$price', '$product_description', current_timestamp())";
-
-            if ($connect->query($sql)===true) {
-                move_uploaded_file($tmp_name, $location);
-                    $message = "<div class='alert alert-light text-light font-weight-bold bg-success show' role='alert'>
-                    Product Added Successfully!!
-                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-                        <span aria-hidden='true'>&times;</span>
-                    </button>
-                </div>";
-            }
-        }
-    }
+    $success_message = '';
+    $error_message = '';
 
     $sql = "SELECT * FROM product_info";
     $product = $connect->query($sql);
@@ -50,20 +21,38 @@
 
     $total_stock = $total_bought['total_bought'] - $total_sold['total_sold'];
 
-?>
+    if (isset($_GET['id'])) {
+        $id = $_GET['id'];
+        $sql = "SELECT * FROM user_info WHERE id = '$id'";
+        $required_user = mysqli_fetch_assoc($connect->query($sql));
+    }elseif (isset($_POST['id'])) {
+        $id = $_POST['id'];
+        $name = $_POST['name'];
+        $email = $_POST['email'];
+        $is_active = $_POST['is_active'];
+        $is_admin = $_POST['is_admin'];
 
+        if (isset($_POST['submit'])) {
+            $sql = "UPDATE user_info SET name = '$name', email = '$email', is_active = '$is_active', is_admin='$is_admin' WHERE id ='$id'";
+            if ($connect->query($sql)===true) {
+                header("Location: user.php");
+            }else{
+                header("Location: updateUser.php?id='$id'");
+            }
+        }
+    }
+
+?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Product Page</title>
+    <title>User Update Page</title>
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
@@ -71,14 +60,13 @@
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
     <!-- Custom styles for this page -->
     <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-
 </head>
 
 <body id="page-top">
 
     <!-- Page Wrapper -->
     <div id="wrapper">
-        
+
         <!-- Sidebar -->
         <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
@@ -149,7 +137,7 @@
                     </button>
 
                     <!-- Topbar Search -->
-                    <h1 class="h3 mb-0 text-gray-800">Product Page</h1>
+                    <h1 class="h3 mb-0 text-gray-800">User Update Page</h1>
 
                     <!-- Topbar Navbar -->
                     <ul class="navbar-nav ml-auto">
@@ -269,117 +257,72 @@
                             </div>
                         </div>
                     </div>
-
-
-
-                    <!-- Add New Product -->
-                    <div class="text-center mb-2">
-                        <button type="button" class="btn btn-primary text-center" data-toggle="modal" data-target="#product"><i class="fas fa-plus-circle"></i> Add New Product</button>
-                    </div>
-                    <div class="modal fade" id="product" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title mb-2" id="exampleModalLabel">Add New Product</h5>
-                                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">×</span>
-                                    </button>
-                                </div>
-
-                                <div class="modal-body">
-                                    <form method="POST" action="product.php" enctype="multipart/form-data">
-                                        <!-- Product Name -->
-                                        <div class="form-group">
-                                            <label for="product-name" class="col-form-label">Product Name</label>
-                                            <input type="text" name="product_name" class="form-control" id="product-name" required>
-                                        </div>
-                                        <!-- Bought -->
-                                        <div class="form-group">
-                                            <label for="bought" class="col-form-label">Buy</label>
-                                            <input type="text" name="bought" class="form-control" id="bought" required>
-                                        </div>
-                                        <!-- Price -->
-                                        <div class="form-group">
-                                            <label for="price" class="col-form-label">Price</label>
-                                            <input type="text" name="price" class="form-control" id="price" required>
-                                        </div>
-
-                                        <!-- Description -->
-                                        <div class="form-group">
-                                            <label for="description" class="col-form-label">Description</label>
-                                            <textarea class="form-control" name="product_description" id="description" required></textarea>
-                                        </div>
-                                        <!-- Image -->
-                                        <div class="form-group">    
-                                            <label for="image" class="col-form-label">Product Image</label>
-                                        
-                                            <input name="image" class="form-control" type="file" id="image" required> 
-                                        </div>
-                                        <div class="form-group text-center">
-                                            <button type="submit" value="submit" name="submit" class="btn btn-success w-50">Add Product</button>
-                                        </div>
-
-                                    </form>
-                                </div>
-
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
             
 
                     <!-- Page Heading -->
-                    <h1 class="h3 mb-2 text-gray-800 ">All Product List</h1>  
-                    <?php
-                        if($message!=''){
-                            echo $message;
+                    <h1 class="h3 mb-3 text-gray-800 text-center">Update User Info</h1>
+                    <?php 
+                        if($success_message!=''){
+                            echo $success_message;
                         }
-                    ?>       
+                    ?>
+                        
                     <!-- DataTales Example -->
                     <div class="card shadow mb-4">
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                                    <thead>
-                                        <tr>
-                                            <th>Product</th>
-                                            <th>Bought</th>
-                                            <th>Sold</th>
-                                            <th>Available Stock</th>
-                                            <th>Price</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php 
-                                        
-                                            if (mysqli_num_rows($product)>0) {
-                                                while ($row = mysqli_fetch_assoc($product)) {
-                                                    $stock = $row['bought'] - $row['sold'];
-                                                    echo '<tr>';
-                                                        echo '<td>'.$row['product_name'].'</td>';
-                                                        echo '<td>'.$row['bought'].'</td>';
-                                                        echo '<td>'.$row['sold'].'</td>';
-                                                        echo '<td>'.$stock.'</td>';
-                                                        echo '<td>'.$row['price'].' TK'.'</td>';
-                                                        
-                                                        echo '<td>';
-                                                            echo "<a href='productDetails.php?id=".$row['id']."' class='btn btn-success btn-sm'><i class='fas fa-eye'></i></a>"; 
-                                                            
-                                                            echo " <a href='updateProduct.php?id=".$row['id']."' class='btn btn-info btn-sm'><i class='fas fa-edit'></i></a>"; 
+                            <div class="row"> 
+                                <!-- Image -->
+                                <div class="col-md-7">
+                                    <div class="text-center">
+                                        <img src="<?php echo $required_user['avater'] ?>" class="rounded img-fluid" style="height: 320px;" alt="...">
+                                    </div>
+                                </div>
 
-                                                            echo " <a href='deleteProduct.php?id=".$row['id']."' class='btn btn-danger btn-sm'><i class='far fa-trash-alt'></i></a>";
-                                                        echo '</td>';
+                                 <!-- Details -->
+                                 <div class="col-md-5">
+                                    
+                                    <form method="POST" action="updateUser.php">
 
-                                                    echo '</tr>';
-                                                }
-                                            }
+                                        <!-- Product Name -->
+                                        <div class="form-group">
+                                            <label for="name" class="col-form-label">Name</label>
+                                            <input type="text" name="name" value="<?php echo $required_user['name'] ?>" class="form-control" id="name" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="email" class="col-form-label">Email</label>
+                                            <input type="text" name="email" value="<?php echo $required_user['email'] ?>" class="form-control" id="email" required>
+                                        </div>
+
+                                        <!-- Buy Product -->
+                                        <div class="form-group">
+                                            <label for="name" class="col-form-label">Active Status</label>
+                                            <select class="form-control form-control" name="is_active">
+                                                <option><?php echo $required_user['is_active'] ?></option>
+                                                <option>inactive</option>
+                                                <option>active</option>
+                                                
+                                            </select>
+                                        </div>
                                         
-                                        ?>                                     
-                                    </tbody>
-                                </table>
+                                        <!-- Sell Product -->
+                                        <div class="form-group">
+                                            <label for="name" class="col-form-label">Role</label>
+                                            <select class="form-control form-control" name="is_admin">
+                                                <option><?php echo $required_user['is_admin'] ?></option>
+                                                <option>user</option>
+                                                <option>admin</option>
+                                            </select>
+                                        </div>
+
+                                        <input type="hidden" name="id" value="<?php echo $id ?>">
+
+                                        <div class="text-center mt-3">
+                                            <input class="btn btn-success mr-2" type="submit" name="submit" value="Update">
+                                            <a href="user.php"><input class="btn btn-primary" type="button" value="Back"></a>
+                                        </div>
+                                    </form>
+                                </div>
+                                
                             </div>
                         </div>
                     </div>

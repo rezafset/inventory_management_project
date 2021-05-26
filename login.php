@@ -1,3 +1,36 @@
+<?php 
+    session_start();
+    $_SESSION['user']='';
+    $_SESSION['userid']='';
+    $_SESSION['avater']='';
+    include('./database/connection.php');
+    $connect = connection();
+    $message = '';
+
+    if(isset($_POST['submit'])){
+        $username = $_POST['username'];
+        $password = $_POST['password'];
+
+        $sql = "SELECT * FROM user_info WHERE username = '$username' AND password = '$password'";
+        $result = $connect->query($sql);
+
+        if(mysqli_num_rows($result) == 1){
+            $user = mysqli_fetch_assoc($result);
+
+            $id = $user['id'];
+            $sql = "UPDATE user_info SET last_login= current_timestamp() WHERE id='$id'";
+            $connect->query($sql);
+            $_SESSION['userid'] = $user['id'];
+            $_SESSION['user'] = $user['name'];
+            $_SESSION['avater'] = $user['avater'];
+
+            header('Location: dashboard.php');
+        }else{
+            $message = "Credentials Mismatch";
+        }
+    }
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -34,9 +67,16 @@
                     <div class="col-lg-6">
                         <div class="p-5">
                             <div class="text-center">
-                                <h1 class="h4 text-gray-900 mb-4">Login Here</h1>
+                                <h1 class="h4 text-gray-900 mb-2">Login Here</h1>
+                                <p class="text-danger font-weight-bold">
+                                    <?php
+                                        if($message!=''){
+                                            echo $message;
+                                        } 
+                                    ?>
+                                </p>
                             </div>
-                            <form class="">
+                            <form method="POST" class="">
 
                                 <div class="form-group mb-3">
                                     <label for="username" class="col-form-label">Username</label>

@@ -1,42 +1,13 @@
 <?php  
+
     session_start();
-    include ('./database/connection.php');
+    include('./database/connection.php');
     $connect = connection();
     $userid = $_SESSION['userid'];
     $user = $_SESSION['user'];
     $profile_pic = $_SESSION['avater'];
-    $message = '';
-
-    if(isset($_POST['submit'])){
-        $product_name = $_POST['product_name'];
-        $bought = $_POST['bought'];
-        $price = $_POST['price'];
-        $product_description = $_POST['product_description'];
-        $image = $_FILES['image'];
-        $image_name = $image['name'];
-        $tmp_name = $image['tmp_name'];
-        $size = $image['size'];
-        $format = explode('.', $image_name);
-        $actualName = strtolower($format[0]);
-        $actualFormat = strtolower($format[1]);
-        $allowFormat = ['jpg', 'jpeg', 'png', 'gif'];
-
-        if(in_array($actualFormat, $allowFormat)) {
-            $location = 'Products/'.$actualName.'.'.$actualFormat;
-
-            $sql = "INSERT INTO product_info (product_name, bought , image, price, product_description, created_at) VALUES('$product_name', '$bought', '$location', '$price', '$product_description', current_timestamp())";
-
-            if ($connect->query($sql)===true) {
-                move_uploaded_file($tmp_name, $location);
-                    $message = "<div class='alert alert-light text-light font-weight-bold bg-success show' role='alert'>
-                    Product Added Successfully!!
-                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
-                        <span aria-hidden='true'>&times;</span>
-                    </button>
-                </div>";
-            }
-        }
-    }
+    $success_message = '';
+    $error_message = '';
 
     $sql = "SELECT * FROM product_info";
     $product = $connect->query($sql);
@@ -50,20 +21,61 @@
 
     $total_stock = $total_bought['total_bought'] - $total_sold['total_sold'];
 
-?>
+    if (isset($_GET['id'])) {
+        $id = $_GET['id'];
+        $sql = "SELECT * FROM product_info WHERE id = '$id'";
+        $product = mysqli_fetch_assoc($connect->query($sql)); 
+    } elseif(isset($_POST['id'])){
+        $id = $_POST['id'];
+        $product_name = $_POST['product_name'];
+        $bought = intval($_POST['bought']);
+        $sold = intval($_POST['sold']);
+        $price = $_POST['price'];
+        $product_description = $_POST['product_description'];
 
+        if ($bought>=$sold) {
+            if (isset($_POST['submit'])) {
+                $sql = "UPDATE product_info SET product_name='$product_name', bought='$bought', sold='$sold', price='$price', product_description='$product_description' WHERE id=$id limit 1";
+
+                if ($connect->query($sql)===true) {
+                    header("Location: product.php");
+                    $succes_message="<div class='alert alert-light text-light font-weight-bold bg-danger show' role='alert'>
+                    Product Updated Successfully
+                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                            <span aria-hidden='true'>&times;</span>
+                        </button>
+                    </div>";
+                }else{
+                    $message="Connection Failed";
+                    header("Location: updateProduct.php?id=$id");
+                }
+                
+            }
+
+        }
+        else{
+            $error_message = "<div class='alert alert-light text-light font-weight-bold bg-danger show' role='alert'>
+                Buy quantity must be larger than Sell quantity
+                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                        <span aria-hidden='true'>&times;</span>
+                    </button>
+            </div>";
+            header("Location: updateProduct.php?id=$id");
+        }
+
+    }
+
+?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Product Page</title>
+    <title>Product Update Page</title>
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
@@ -71,14 +83,13 @@
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
     <!-- Custom styles for this page -->
     <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-
 </head>
 
 <body id="page-top">
 
     <!-- Page Wrapper -->
     <div id="wrapper">
-        
+
         <!-- Sidebar -->
         <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
@@ -149,7 +160,7 @@
                     </button>
 
                     <!-- Topbar Search -->
-                    <h1 class="h3 mb-0 text-gray-800">Product Page</h1>
+                    <h1 class="h3 mb-0 text-gray-800">Product Update Page</h1>
 
                     <!-- Topbar Navbar -->
                     <ul class="navbar-nav ml-auto">
@@ -269,117 +280,71 @@
                             </div>
                         </div>
                     </div>
-
-
-
-                    <!-- Add New Product -->
-                    <div class="text-center mb-2">
-                        <button type="button" class="btn btn-primary text-center" data-toggle="modal" data-target="#product"><i class="fas fa-plus-circle"></i> Add New Product</button>
-                    </div>
-                    <div class="modal fade" id="product" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title mb-2" id="exampleModalLabel">Add New Product</h5>
-                                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">×</span>
-                                    </button>
-                                </div>
-
-                                <div class="modal-body">
-                                    <form method="POST" action="product.php" enctype="multipart/form-data">
-                                        <!-- Product Name -->
-                                        <div class="form-group">
-                                            <label for="product-name" class="col-form-label">Product Name</label>
-                                            <input type="text" name="product_name" class="form-control" id="product-name" required>
-                                        </div>
-                                        <!-- Bought -->
-                                        <div class="form-group">
-                                            <label for="bought" class="col-form-label">Buy</label>
-                                            <input type="text" name="bought" class="form-control" id="bought" required>
-                                        </div>
-                                        <!-- Price -->
-                                        <div class="form-group">
-                                            <label for="price" class="col-form-label">Price</label>
-                                            <input type="text" name="price" class="form-control" id="price" required>
-                                        </div>
-
-                                        <!-- Description -->
-                                        <div class="form-group">
-                                            <label for="description" class="col-form-label">Description</label>
-                                            <textarea class="form-control" name="product_description" id="description" required></textarea>
-                                        </div>
-                                        <!-- Image -->
-                                        <div class="form-group">    
-                                            <label for="image" class="col-form-label">Product Image</label>
-                                        
-                                            <input name="image" class="form-control" type="file" id="image" required> 
-                                        </div>
-                                        <div class="form-group text-center">
-                                            <button type="submit" value="submit" name="submit" class="btn btn-success w-50">Add Product</button>
-                                        </div>
-
-                                    </form>
-                                </div>
-
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
             
 
                     <!-- Page Heading -->
-                    <h1 class="h3 mb-2 text-gray-800 ">All Product List</h1>  
-                    <?php
-                        if($message!=''){
-                            echo $message;
+                    <h1 class="h3 mb-3 text-gray-800 text-center">Update Product Info</h1>
+                    <?php 
+                        if($success_message!=''){
+                            echo $success_message;
                         }
-                    ?>       
+                    ?>
+                        
                     <!-- DataTales Example -->
                     <div class="card shadow mb-4">
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                                    <thead>
-                                        <tr>
-                                            <th>Product</th>
-                                            <th>Bought</th>
-                                            <th>Sold</th>
-                                            <th>Available Stock</th>
-                                            <th>Price</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php 
-                                        
-                                            if (mysqli_num_rows($product)>0) {
-                                                while ($row = mysqli_fetch_assoc($product)) {
-                                                    $stock = $row['bought'] - $row['sold'];
-                                                    echo '<tr>';
-                                                        echo '<td>'.$row['product_name'].'</td>';
-                                                        echo '<td>'.$row['bought'].'</td>';
-                                                        echo '<td>'.$row['sold'].'</td>';
-                                                        echo '<td>'.$stock.'</td>';
-                                                        echo '<td>'.$row['price'].' TK'.'</td>';
-                                                        
-                                                        echo '<td>';
-                                                            echo "<a href='productDetails.php?id=".$row['id']."' class='btn btn-success btn-sm'><i class='fas fa-eye'></i></a>"; 
-                                                            
-                                                            echo " <a href='updateProduct.php?id=".$row['id']."' class='btn btn-info btn-sm'><i class='fas fa-edit'></i></a>"; 
+                            <div class="row"> 
+                                <!-- Image -->
+                                <div class="col-md-7">
+                                    <div class="text-center">
+                                        <img src="<?php echo $product['image'] ?>" class="rounded img-fluid" style="height: 320px;" alt="...">
+                                    </div>
+                                </div>
 
-                                                            echo " <a href='deleteProduct.php?id=".$row['id']."' class='btn btn-danger btn-sm'><i class='far fa-trash-alt'></i></a>";
-                                                        echo '</td>';
+                                 <!-- Details -->
+                                 <div class="col-md-5">
+                                    
+                                    <form method="POST" action="updateProduct.php">
 
-                                                    echo '</tr>';
-                                                }
-                                            }
+                                        <!-- Product Name -->
+                                        <div class="form-group mb-0">
+                                            <label for="product-name" class="col-form-label">Product Name</label>
+                                            <input type="text" name="product_name" value="<?php echo $product['product_name'] ?>" class="form-control" id="product-name" required>
+                                        </div>
+
+                                        <!-- Buy Product -->
+                                        <div class="form-group mb-0">
+                                            <label for="bought" class="col-form-label">Buy Product</label>
+                                            <input type="text" name="bought" value="<?php echo $product['bought'] ?>" class="form-control" id="bought" required>
+                                        </div>
                                         
-                                        ?>                                     
-                                    </tbody>
-                                </table>
+                                        <!-- Sell Product -->
+                                        <div class="form-group mb-0">
+                                            <label for="sold" class="col-form-label">Sell Product</label>
+                                            <input type="text" name="sold" value="<?php echo $product['sold'] ?>" class="form-control" id="sold" required>
+                                        </div>
+                        
+                                        <!--  Product Price-->
+                                        <div class="form-group mb-0">
+                                            <label for="price" class="col-form-label">Price</label>
+                                            <input type="text" name="price" value="<?php echo $product['price'] ?>" class="form-control" id="price" required>
+                                        </div>
+                                        
+                                        <!--  Product Description-->
+                                        <div class="form-group mb-0">
+                                            <label for="description" class="col-form-label">Description</label>
+                                            <textarea class="form-control" name="product_description"  id="description" required><?php echo $product['product_description'] ?></textarea>
+                                        </div>
+
+                                        <input type="hidden" name="id" value="<?php echo $id ?>">
+
+                                        <div class="text-center mt-3">
+                                            <input class="btn btn-success mr-2" type="submit" name="submit" value="Update">
+                                            <a href="product.php"><input class="btn btn-primary" type="button" value="Back"></a>
+                                        </div>
+                                    </form>
+                                </div>
+                                
                             </div>
                         </div>
                     </div>

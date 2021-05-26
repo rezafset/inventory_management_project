@@ -1,3 +1,26 @@
+<?php  
+    session_start();
+    $userid = $_SESSION['userid'];
+    $user = $_SESSION['user'];
+    $profile_pic = $_SESSION['avater'];
+    include('./database/connection.php');
+    $connect = connection();
+    $message = '';
+
+    $sql = "SELECT * FROM product_info";
+    $product = $connect->query($sql);
+
+    $sql = "SELECT COUNT(*) AS total_product FROM product_info";
+    $total_product = mysqli_fetch_assoc($connect->query($sql));
+    $sql = "SELECT SUM(bought) AS total_bought FROM product_info";
+    $total_bought = mysqli_fetch_assoc($connect->query($sql));
+    $sql = "SELECT SUM(sold) AS total_sold FROM product_info";
+    $total_sold = mysqli_fetch_assoc($connect->query($sql));
+
+    $total_stock = $total_bought['total_bought'] - $total_sold['total_sold'];
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -30,9 +53,7 @@
 
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="dashboard.php">
-                <div class="sidebar-brand-icon rotate-n-15">
-                    <i class="fas fa-laugh-wink"></i>
-                </div>
+                <img class="img-profile rounded-circle" height="55px;" width="55px;" src="<?php echo $profile_pic ?>">
                 <div class="sidebar-brand-text mx-3">IMS</div>
             </a>
 
@@ -97,7 +118,8 @@
                     </button>
 
                     <!-- Topbar Search -->
-                    <h1 class="h3 mb-0 text-gray-800">Welcome To Dashboard</h1>
+                    <h1 class="h3 mb-0 text-gray-800">Inventory Management System</h1>
+                    
 
                     <!-- Topbar Navbar -->
                     <ul class="navbar-nav ml-auto">
@@ -109,14 +131,14 @@
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">Douglas McGee</span>
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"> <?php echo $user ?> </span>
                                 <img class="img-profile rounded-circle"
-                                src="img/undraw_profile.svg">
+                                src="<?php echo $profile_pic ?>">
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item" href="userProfile.php?id=<?php echo $userid; ?>">
                                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Profile
                                 </a>
@@ -148,10 +170,10 @@
                                             <div class="text-xs font-weight-bold text-light text-uppercase mb-1">
                                                 <span>Total Product</span>
                                             </div>
-                                            <div class="h5 mb-0 font-weight-bold text-light">$40,000</div>
+                                            <div class="h5 mb-0 font-weight-bold text-light"><?php echo $total_product['total_product']; ?></div>
                                         </div>
                                         <div class="col-auto">
-                                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                            <i class="fab fa-product-hunt fa-2x text-gray-300"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -167,10 +189,10 @@
                                             <div class="text-xs font-weight-bold text-light text-uppercase mb-1">
                                                 Buy Product
                                             </div>
-                                            <div class="h5 mb-0 font-weight-bold text-light">$215,000</div>
+                                            <div class="h5 mb-0 font-weight-bold text-light"><?php echo $total_bought['total_bought']; ?></div>
                                         </div>
                                         <div class="col-auto">
-                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                            <i class="fab fa-product-hunt fa-2x text-gray-300"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -187,19 +209,12 @@
                                             </div>
                                             <div class="row no-gutters align-items-center">
                                                 <div class="col-auto">
-                                                    <div class="h5 mb-0 mr-3 font-weight-bold text-light">50%</div>
-                                                </div>
-                                                <div class="col">
-                                                    <div class="progress progress-sm mr-2">
-                                                        <div class="progress-bar bg-info" role="progressbar"
-                                                            style="width: 50%" aria-valuenow="50" aria-valuemin="0"
-                                                            aria-valuemax="100"></div>
-                                                    </div>
+                                                    <div class="h5 mb-0 mr-3 font-weight-bold text-light"><?php echo $total_sold['total_sold']; ?></div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="col-auto">
-                                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                                            <i class="fab fa-product-hunt fa-2x text-gray-300"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -214,10 +229,10 @@
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-light text-uppercase mb-1">
                                             Available Stock</div>
-                                            <div class="h5 mb-0 font-weight-bold text-light">18</div>
+                                            <div class="h5 mb-0 font-weight-bold text-light"><?php echo $total_stock; ?></div>
                                         </div>
                                         <div class="col-auto">
-                                            <i class="fas fa-comments fa-2x text-gray-300"></i>
+                                            <i class="fab fa-product-hunt fa-2x text-gray-300"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -392,7 +407,9 @@
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
+                <div class="modal-body">
+                    If you do, then you will logout from this system!!
+                </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
                     <a class="btn btn-primary" href="logout.php">Logout</a>
